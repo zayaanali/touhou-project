@@ -1,0 +1,5 @@
+# touhou-project
+## Introduction
+This aim of this project was to build an arcade space-themed shooter taking inspiration from the Japanese 90s game Touhou Project. The game consists of controlling a playable character to avoid waves of enemies, each of which can shoot bullets at the player. The player loses a life each time he hits a projectile, and when three lives are lost, the game ends. The player can avoid enemies and projectiles by using the arrow keys to move the character around the playable space. A laser gun can be used to shoot enemies, and upon contact with its beam they will disappear. If needed, the player can activate a spell card up to 3 times per life to immediately despawn all visible enemies and projectiles. The player score, as well as the life and spell counters can be found to the right of the playable area and are updated each time the player kills an enemy, loses a life, and uses a spell card respectively. 
+
+For more information on the game see final-lab-report.pdf
