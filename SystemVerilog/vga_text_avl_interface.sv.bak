@@ -1,0 +1,195 @@
+/************************************************************************
+Avalon-MM Interface VGA Text mode display
+
+Register Map:
+0x000-0x0257 : VRAM, 80x30 (2400 byte, 600 word) raster order (first column then row)
+0x258        : control register
+
+VRAM Format:
+X->
+[ 31  30-24][ 23  22-16][ 15  14-8 ][ 7    6-0 ]
+[IV3][CODE3][IV2][CODE2][IV1][CODE1][IV0][CODE0]
+
+IVn = Draw inverse glyph
+CODEn = Glyph code from IBM codepage 437
+
+Control Register Format:
+[[31-25][24-21][20-17][16-13][ 12-9][ 8-5 ][ 4-1 ][   0    ] 
+[[RSVD ][FGD_R][FGD_G][FGD_B][BKG_R][BKG_G][BKG_B][RESERVED]
+
+VSYNC signal = bit which flips on every Vsync (time for new frame), used to synchronize software
+BKG_R/G/B = Background color, flipped with foreground when IVn bit is set
+FGD_R/G/B = Foreground color, flipped with background when Inv bit is set
+
+************************************************************************/
+`define NUM_REGS 601 //80*30 characters / 4 characters per register
+`define CTRL_REG 600 //index of control register
+
+module vga_text_avl_interface (
+	// Avalon Clock Input, note this clock is also used for VGA, so this must be 50Mhz
+	// We can put a clock divider here in the future to make this IP more generalizable
+	input logic CLK,
+	
+	// Avalon Reset Input
+	input logic RESET,
+	
+	// Avalon-MM Slave Signals
+	input  logic AVL_READ,					// Avalon-MM Read
+	input  logic AVL_WRITE,					// Avalon-MM Write
+	input  logic AVL_CS,					// Avalon-MM Chip Select
+	input  logic [3:0] AVL_BYTE_EN,			// Avalon-MM Byte Enable
+	input  logic [9:0] AVL_ADDR,			// Avalon-MM Address
+	input  logic [31:0] AVL_WRITEDATA,		// Avalon-MM Write Data
+	output logic [31:0] AVL_READDATA,		// Avalon-MM Read Data
+	
+	// Exported Conduit (mapped to VGA port - make sure you export in Platform Designer)
+	output logic [3:0]  red, green, blue,	// VGA color channels (mapped to output pins in top-level)
+	output logic hs, vs						// VGA HS/VS
+);
+
+logic [31:0] LOCAL_REG       [`NUM_REGS]; // Registers
+//put other local variables here
+// logic [31:0] VRAM;
+logic [7:0] data; 
+
+//Declare submodules..e.g. VGA controller, ROMS, etc
+	
+   
+// Read and write from AVL interface to register block, note that READ waitstate = 1, so this should be in always_ff
+
+
+// not sure about -> write has 0 cycle wait latency, read has 1 cycle wait latency?
+// does this mean write is combinational? 
+//~ talked to TA i think this is right ~
+always_ff @(posedge CLK) begin
+	
+	// RESET all registers
+	if (RESET) begin
+		for (int i=0; i<NUM_REGS; i++)
+			LOCAL_REG[i] <= 32b'0;
+	end
+	
+	// READ data
+	if (AVL_READ && AVL_CS)
+		AVL_READDATA <= LOCAL_REG[AVL_ADDR]; 
+
+	
+	// WRITE DATA
+	if (AVL_WRITEDATA && AVL_CS) begin
+		// case statement to write based on BYTE ENABLE
+		unique case (AVL_BYTE_EN)
+			4'b1111: LOCAL_REG[AVL_ADDR][31:0] <= AVL_WRITEDATA[31:0]; // full 32 bits
+			4'b1100: LOCAL_REG[AVL_ADDR][31:16] <= AVL_WRITEDATA[31:16]; // two upper bytes
+			4'b0011: LOCAL_REG[AVL_ADDR][15:0] <= AVL_WRITEDATA[15:0]; // two lower bytes
+			4'b1000: LOCAL_REG[AVL_ADDR][31:24] <= AVL_WRITEDATA[31:24]; //byte 3 only
+			4'b0100: LOCAL_REG[AVL_ADDR][23:16] <= AVL_WRITEDATA[23:16];  // byte 2 only
+			4'b0010: LOCAL_REG[AVL_ADDR][15:8] <= AVL_WRITEDATA[15:8];  // byte 1 only
+			4'b0001: LOCAL_REG[AVL_ADDR][7:0] <= AVL_WRITEDATA[7:0]; // byte 0 only
+			default: // do nothing
+		endcase 
+	end 
+end
+
+
+//handle drawing (may either be combinational or sequential - or both).
+
+// getting the font/val	
+// x0257 = 599, x258 = 600
+always_ff @(posedge CLK) begin
+	
+	logic [7:0] CODE0, CODE1, CODE2, CODE3;
+	logic IV0, IV1, IV2, IV3;
+	logic [8:0] DATA0, DATA1, DATA2, DATA3;
+	logic [3:0] FGD_R, FGD_G, FGD_B;
+	logic [3:0] BKG_R, BKG_G, BKG_B;
+
+	
+	// SET FROM CONTROL REG
+	LOCAL_REG[600][24:21] <= FGD_R;
+	LOCAL_REG[600][20:17] <= FGD_G;
+	LOCAL_REG[600][16:13] <= FGD_B;
+	LOCAL_REG[600][12:9] <= BKG_R;
+	LOCAL_REG[600][8:5] <= BKG_G;
+	LOCAL_REG[600][4:1] <= BKG_B;
+	
+	
+	// READ + PRINT
+	for (int i=0; i<=599; i++) begin // for each bit encoding
+		
+		// GET FONT
+		IV3 = LOCAL_REG[i][31]; // is this the correct way to address?
+		CODE3 = LOCAL_REG[i][30:24]; 
+		IV2 = LOCAL_REG[i][23]; 
+		CODE2 = LOCAL_REG[i][22:16]; 
+		IV1 = LOCAL_REG[i][15];
+		CODE1 = LOCAL_REG[i][14:8];
+		IV0 = LOCAL_REG[i][7];   
+		CODE0 = LOCAL_REG[i][6:0]; 
+
+		font_rom rom0(CODE0, DAT0);
+		font_rom rom1(CODE1, DATA1);
+		font_rom rom2(CODE2, DATA2);
+		font_rom rom3(CODE3, DATA3);
+
+		// PRINT FONT0
+		if (IV0) begin  // if inverse print inverse color
+			red <= BKG_R;
+			blue <= BKG_B;
+			green <= BKG_R;
+			hs <= ~hs; // ?
+		end else begin // else normal color
+			red <= FGD_R;
+			blue <= FGD_B;
+			green <= FGD_G;
+			hs <= ~hs; // ?
+		end
+		// PRINT FONT1
+		if (IV1) begin  // if inverse print inverse color
+			red <= BKG_R;
+			blue <= BKG_B;
+			green <= BKG_R;
+			hs <= ~hs; // ?
+		end else begin // else normal color
+			red <= FGD_R;
+			blue <= FGD_B;
+			green <= FGD_G;
+			hs <= ~hs; // ?
+		end
+		// PRINT FONT2
+		if (IV2) begin  // if inverse print inverse color
+			red <= BKG_R;
+			blue <= BKG_B;
+			green <= BKG_R;
+			hs <= ~hs; // ?
+		end else begin // else normal color
+			red <= FGD_R;
+			blue <= FGD_B;
+			green <= FGD_G;
+			hs <= ~hs; // ?
+		end
+		// PRINT FONT3
+		if (IV3) begin  // if inverse print inverse color
+			red <= BKG_R;
+			blue <= BKG_B;
+			green <= BKG_R;
+			hs <= ~hs; // ?
+		end else begin // else normal color
+			red <= FGD_R;
+			blue <= FGD_B;
+			green <= FGD_G;
+			hs <= ~hs; // ?
+		end
+
+		vs <= ~vs; // ?
+	
+	end
+	
+
+
+
+
+
+end
+
+
+endmodule

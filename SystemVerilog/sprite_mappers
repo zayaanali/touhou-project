@@ -1,0 +1,249 @@
+module player_mapper (  input [24:0] sprite_info,
+                        input Clk,
+                        input [9:0] DrawX, DrawY,
+                        output logic [3:0] palette_out);
+
+
+    /*-- Mapping from the sprite list to variables--*/
+    //logic [4:0] sprite_idx;
+    logic [8:0] XCoord;
+    logic [9:0] YCoord;
+    logic sprite_en, draw_sprite;
+    assign XCoord = sprite_info[18:10];
+    assign YCoord = sprite_info[9:0];
+    assign sprite_en = sprite_info[19];
+    
+    
+    /*-- Calculate all boundaries, x/y coord is top left --*/
+    int leftBound, rightBound, topBound, lowerBound;
+    
+    assign leftBound = XCoord;
+    assign rightBound = XCoord+31;
+    assign topBound = YCoord;
+    assign lowerBound = YCoord+47;
+
+    /*-- Check if DrawX/DrawY is within boundaries, check if I should draw the sprite --*/
+    always_comb begin
+        if (DrawX>=leftBound & DrawX<=rightBound & sprite_en
+            & DrawY>=lowerBound & DrawY<=topBound) begin
+                draw_sprite = 1'b1;
+            end else begin
+                draw_sprite = 1'b0;
+            end
+    end
+
+    /*-- Calculate the pixel access index (to access the rom) --*/
+    int Xsprite, Ysprite, xOffset, yOffset, pixel_access;
+    assign Xsprite = leftBound - XCoord;
+    assign Ysprite = topBound - YCoord;
+    assign xOffset = Xsprite >> 5;
+    assign pixel_access = (32*Ysprite)+xOffset;
+
+    logic [3:0] palette_idx, data_in;
+
+    playerCenterROM player(.data_in(4'b0), .write_address(11'b0), .read_address(pixel_access), .we(1'b0), .Clk(Clk), .data_out(palette_idx));
+    
+    assign palette_out = (draw_sprite) ? palette_idx : 4'b0;
+    
+
+endmodule
+
+module winged_eye (  input [24:0] sprite_info,
+                        input Clk,
+                        input [9:0] DrawX, DrawY,
+                        output logic [3:0] palette_out);
+
+
+    /*-- Mapping from the sprite list to variables--*/
+    //logic [4:0] sprite_idx;
+    logic [8:0] XCoord;
+    logic [9:0] YCoord;
+    logic sprite_en, draw_sprite;
+    assign XCoord = sprite_info[18:10];
+    assign YCoord = sprite_info[9:0];
+    assign sprite_en = sprite_info[19];
+    
+    
+    /*-- Calculate all boundaries, x/y coord is top left --*/
+    int leftBound, rightBound, topBound, lowerBound;
+    
+    assign leftBound = XCoord;
+    assign rightBound = XCoord+31;
+    assign topBound = YCoord;
+    assign lowerBound = YCoord+47;
+
+    /*-- Check if DrawX/DrawY is within boundaries, check if I should draw the sprite --*/
+    always_comb begin
+        if (DrawX>=leftBound & DrawX<=rightBound & sprite_en
+            & DrawY>=lowerBound & DrawY<=topBound) begin
+                draw_sprite = 1'b1;
+            end else begin
+                draw_sprite = 1'b0;
+            end
+    end
+
+    /*-- Calculate the pixel access index (to access the rom) --*/
+    int Xsprite, Ysprite, xOffset, yOffset, pixel_access;
+    assign Xsprite = leftBound - XCoord;
+    assign Ysprite = topBound - YCoord;
+    assign xOffset = Xsprite >> 5;
+    assign pixel_access = (32*Ysprite)+xOffset;
+
+    logic [3:0] palette_idx, data_in;
+
+    playerCenterROM player(.data_in(4'b0), .write_address(11'b0), .read_address(pixel_access), .we(1'b0), .Clk(Clk), .data_out(palette_idx));
+    
+    assign palette_out = (draw_sprite) ? palette_idx : 4'b0;
+    
+
+endmodule
+
+module enemy_ghost (  input [24:0] sprite_info,
+                        input Clk,
+                        input [9:0] DrawX, DrawY,
+                        output logic [3:0] palette_out);
+
+
+    /*-- Mapping from the sprite list to variables--*/
+    //logic [4:0] sprite_idx;
+    logic [8:0] XCoord;
+    logic [9:0] YCoord;
+    logic sprite_en, draw_sprite;
+    assign XCoord = sprite_info[18:10];
+    assign YCoord = sprite_info[9:0];
+    assign sprite_en = sprite_info[19];
+    
+    
+    /*-- Calculate all boundaries, x/y coord is top left --*/
+    int leftBound, rightBound, topBound, lowerBound;
+    
+    assign leftBound = XCoord;
+    assign rightBound = XCoord+31;
+    assign topBound = YCoord;
+    assign lowerBound = YCoord+47;
+
+    /*-- Check if DrawX/DrawY is within boundaries, check if I should draw the sprite --*/
+    always_comb begin
+        if (DrawX>=leftBound & DrawX<=rightBound & sprite_en
+            & DrawY>=lowerBound & DrawY<=topBound) begin
+                draw_sprite = 1'b1;
+            end else begin
+                draw_sprite = 1'b0;
+            end
+    end
+
+    /*-- Calculate the pixel access index (to access the rom) --*/
+    int Xsprite, Ysprite, xOffset, yOffset, pixel_access;
+    assign Xsprite = leftBound - XCoord;
+    assign Ysprite = topBound - YCoord;
+    assign xOffset = Xsprite >> 5;
+    assign pixel_access = (32*Ysprite)+xOffset;
+
+    logic [3:0] palette_idx, data_in;
+
+    playerCenterROM player(.data_in(4'b0), .write_address(11'b0), .read_address(pixel_access), .we(1'b0), .Clk(Clk), .data_out(palette_idx));
+    
+    assign palette_out = (draw_sprite) ? palette_idx : 4'b0;
+    
+
+endmodule
+
+module enemy_fairy (  input [24:0] sprite_info,
+                        input Clk,
+                        input [9:0] DrawX, DrawY,
+                        output logic [3:0] palette_out);
+
+
+    /*-- Mapping from the sprite list to variables--*/
+    //logic [4:0] sprite_idx;
+    logic [8:0] XCoord;
+    logic [9:0] YCoord;
+    logic sprite_en, draw_sprite;
+    assign XCoord = sprite_info[18:10];
+    assign YCoord = sprite_info[9:0];
+    assign sprite_en = sprite_info[19];
+    
+    
+    /*-- Calculate all boundaries, x/y coord is top left --*/
+    int leftBound, rightBound, topBound, lowerBound;
+    
+    assign leftBound = XCoord;
+    assign rightBound = XCoord+31;
+    assign topBound = YCoord;
+    assign lowerBound = YCoord+47;
+
+    /*-- Check if DrawX/DrawY is within boundaries, check if I should draw the sprite --*/
+    always_comb begin
+        if (DrawX>=leftBound & DrawX<=rightBound & sprite_en
+            & DrawY>=lowerBound & DrawY<=topBound) begin
+                draw_sprite = 1'b1;
+            end else begin
+                draw_sprite = 1'b0;
+            end
+    end
+
+    /*-- Calculate the pixel access index (to access the rom) --*/
+    int Xsprite, Ysprite, xOffset, yOffset, pixel_access;
+    assign Xsprite = leftBound - XCoord;
+    assign Ysprite = topBound - YCoord;
+    assign xOffset = Xsprite >> 5;
+    assign pixel_access = (32*Ysprite)+xOffset;
+
+    logic [3:0] palette_idx, data_in;
+
+    playerCenterROM player(.data_in(4'b0), .write_address(11'b0), .read_address(pixel_access), .we(1'b0), .Clk(Clk), .data_out(palette_idx));
+    
+    assign palette_out = (draw_sprite) ? palette_idx : 4'b0;
+    
+
+endmodule
+
+module bullet (  input [24:0] sprite_info,
+                        input Clk,
+                        input [9:0] DrawX, DrawY,
+                        output logic [3:0] palette_out);
+
+
+    /*-- Mapping from the sprite list to variables--*/
+    //logic [4:0] sprite_idx;
+    logic [8:0] XCoord;
+    logic [9:0] YCoord;
+    logic sprite_en, draw_sprite;
+    assign XCoord = sprite_info[18:10];
+    assign YCoord = sprite_info[9:0];
+    assign sprite_en = sprite_info[19];
+    
+    
+    /*-- Calculate all boundaries, x/y coord is top left --*/
+    int leftBound, rightBound, topBound, lowerBound;
+    
+    assign leftBound = XCoord;
+    assign rightBound = XCoord+31;
+    assign topBound = YCoord;
+    assign lowerBound = YCoord+47;
+
+    /*-- Check if DrawX/DrawY is within boundaries, check if I should draw the sprite --*/
+    always_comb begin
+        if (DrawX>=leftBound & DrawX<=rightBound & sprite_en
+            & DrawY>=lowerBound & DrawY<=topBound) begin
+                draw_sprite = 1'b1;
+            end else begin
+                draw_sprite = 1'b0;
+            end
+    end
+
+    /*-- Calculate the pixel access index (to access the rom) --*/
+    int Xsprite, Ysprite, xOffset, yOffset, pixel_access;
+    assign Xsprite = leftBound - XCoord;
+    assign Ysprite = topBound - YCoord;
+    assign xOffset = Xsprite >> 5;
+    assign pixel_access = (32*Ysprite)+xOffset;
+
+    logic [3:0] palette_idx, data_in;
+
+    playerCenterROM player(.data_in(4'b0), .write_address(11'b0), .read_address(pixel_access), .we(1'b0), .Clk(Clk), .data_out(palette_idx));
+    
+    assign palette_out = (draw_sprite) ? palette_idx : 4'b0;
+    
+
+endmodule
